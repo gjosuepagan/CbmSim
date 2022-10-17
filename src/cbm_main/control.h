@@ -92,7 +92,6 @@ class Control
 		// mzone stuff -> TODO: place in build file down the road
 		int numMZones = 1; 
 
-		// TODO: place in experiment trial down the road
 		// MFFreq params (formally in Simulation::getMFs, Simulation::getMFFreq)
 		int mfRandSeed = 3;
 		float threshDecayTau = 4.0;
@@ -125,11 +124,11 @@ class Control
 		float fracImport  = 0.0;
 		float fracOverlap = 0.2;
 
-		int trialTime = 5000; /* wild that this is here */
+		int trialTime = 0; /* was 5000 (10/17/2022) */
 	
 		// raster measurement params. 
-		int msPreCS = 400; // was 1500 (08/09/2022)
-		int msPostCS = 400; // was 1000 (08/09/2022)
+		int msPreCS = 0; // was 400 (10/17/2022) was 1500 (08/09/2022)
+		int msPostCS = 0; // was 400 (10/17/2022) was 1000 (08/09/2022)
 		int PSTHColSize = 0; // derived param, from msPreCS, msPostCS and csLength 
 
 		std::string mf_raster_file = "";
