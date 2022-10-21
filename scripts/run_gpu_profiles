@@ -1,7 +1,7 @@
 #!/usr/bin/bash 
 
 # globals                                                                                                                             
-root_dir="/usr/Dev/Git/Big_Sim/" 
+root_dir="/home/seang/Dev/Git/Big_Sim/" 
 build_dir="${root_dir}build/" 
 scripts_dir="${root_dir}scripts/" 
 control_file_dir="${root_dir}src/cbm_main/" 
@@ -12,23 +12,23 @@ this_isi=$original_isi
 
 #commence the automation 
 for i in {0..7}; do
-	for j in {1..4}; do
+	for j in {1..2}; do
 		cd $build_dir 
-		./cbm_sim -i debug_4.sim -e isi_${this_isi}_profile.expt
+		./cbm_sim -i debug.sim -e isi_${this_isi}_profile.expt
 		sed -i "s/gpuP2=${j}/gpuP2=$( expr $j + 1 )/" $control_header
-		sed -i "s/profile_trial_times_raw_cpu_gpu_times_isi_${this_isi}_100_trial_${j}_2080.csv/profile_trial_times_raw_cpu_gpu_times_isi_${this_isi}_100_trial_$( expr $j + 1 )_2080.csv/" $control_file 
+		sed -i "s/profile_trial_times_raw_cpu_gpu_times_isi_${this_isi}_100_trial_${j}_3090.csv/profile_trial_times_raw_cpu_gpu_times_isi_${this_isi}_100_trial_$( expr $j + 1 )_3090.csv/" $control_file 
 		cd $root_dir 
 		make 
 	done
 	next_isi=$(( this_isi - 250 )) 
-	sed -i "s/gpuP2=5/gpuP2=1/" $control_header
-	sed -i "s/profile_trial_times_raw_cpu_gpu_times_isi_${this_isi}_100_trial_5_2080.csv/profile_trial_times_raw_cpu_gpu_times_isi_${next_isi}_100_trial_1_2080.csv/" $control_file 
+	sed -i "s/gpuP2=3/gpuP2=1/" $control_header
+	sed -i "s/profile_trial_times_raw_cpu_gpu_times_isi_${this_isi}_100_trial_3_3090.csv/profile_trial_times_raw_cpu_gpu_times_isi_${next_isi}_100_trial_1_3090.csv/" $control_file 
 	cd $root_dir 
 	make 
 	this_isi=$next_isi 
 done
 sed -i "s/gpuP2=1/gpuP2=2/" $control_header
-sed -i "s/profile_trial_times_raw_cpu_gpu_times_isi_${this_isi}_100_trial_1_2080.csv/profile_trial_times_raw_cpu_gpu_times_isi_${original_isi}_100_trial_1_2080.csv/" $control_file 
+sed -i "s/profile_trial_times_raw_cpu_gpu_times_isi_${this_isi}_100_trial_1_3090.csv/profile_trial_times_raw_cpu_gpu_times_isi_${original_isi}_100_trial_1_3090.csv/" $control_file 
 cd $root_dir 
 make 
 cd $scripts_dir
