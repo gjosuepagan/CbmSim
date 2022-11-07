@@ -163,7 +163,15 @@ static void on_save_mf_psth(GtkWidget *widget, Control *control)
 	//save_file(widget, control, &Control::save_raster_to_file, "[ERROR]: Could not save mf psth to file.", DEFAULT_MF_RASTER_FILE_NAME);
 }
 
-//FIXME: below is a stop-gap solution. should be more careful with destroy callback
+//FIXME: below two are stop-gap solutions. should be more careful with destroy callback
+gboolean gr_act_win_visible(struct gui *gui)
+{
+	return gui->graw.window != NULL
+	   && GTK_IS_WIDGET(gui->graw.window)
+	   && gtk_widget_get_realized(gui->graw.window)
+	   && gtk_widget_get_visible(gui->graw.window);
+}
+
 gboolean firing_rates_win_visible(struct gui *gui)
 {
 	return gui->frw.window != NULL
@@ -561,11 +569,11 @@ static void draw_raster(GtkWidget *drawing_area, cairo_t *cr, uint32_t trial, ui
 	}
 } 
 
-static void draw_spatial_activity(GtkWidget *drawing_area, cairo_t *cr, Control *control)
+static void draw_gr_spatial_activity(GtkWidget *drawing_area, cairo_t *cr, Control *control)
 {
 	/*
 	 * the plan: 
-	 *     for cell coordinates x and y (in the square: [0, num_cell) x [0, num_cell)), if cell at (x, y)
+	 *     for cell coordinates x and y (in the square: [0, num_cell_x) x [0, num_cell_y)), if cell at (x, y)
 	 *     fires at time step t_i, draw a dot with alpha 1. for each time step after a spike, decrease alpha
 	 *     by a fixed amount.
 	 *
@@ -575,6 +583,38 @@ static void draw_spatial_activity(GtkWidget *drawing_area, cairo_t *cr, Control 
 	 *     certain number of training or forgetting trials
 	 *
 	 */
+
+	// background color setup
+	cairo_set_source_rgb(cr, 0, 0, 0);
+	cairo_paint(cr);
+
+	/* GtkDrawingArea size */
+	GdkRectangle da;            
+	GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(drawing_area));
+	
+	/* Determine GtkDrawingArea dimensions */
+	gdk_window_get_geometry(window,
+	        &da.x,
+	        &da.y,
+	        &da.width,
+	        &da.height);
+
+	float img_scale_y = da.height / (float)gr_y;
+	float img_scale_x = da.width / (float)gr_x;
+	cairo_translate(cr, 0, da.height);
+	cairo_scale(cr, img_scale_x, -img_scale_y);
+
+	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	const uint8_t* ap_gr = control->simCore->getInputNet()->exportAPGR();
+	/* commence drawing */
+	for (uint32_t i = 0; i < num_gr; i++)
+	{
+		if (ap_gr[i])
+		{
+			cairo_rectangle(cr, i % gr_x, i / gr_y, 2, 1);
+			cairo_fill(cr);
+		}
+	}
 }
 
 static void draw_gr_raster(GtkWidget *drawing_area, cairo_t *cr, Control *control)
@@ -784,6 +824,26 @@ static void generate_pc_plot(GtkWidget *widget,
 	gtk_widget_show_all(child_window);
 }
 
+static void generate_gr_spatial_plot(GtkWidget *widget,
+	  void (* draw_func)(GtkWidget *, cairo_t *, Control *), struct gui *gui)
+{
+	gui->graw.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	
+	gtk_window_set_title(GTK_WINDOW(gui->graw.window), "GR Spatial Activity");
+	gtk_window_set_default_size(GTK_WINDOW(gui->graw.window),
+								DEFAULT_GR_SPATIAL_WINDOW_WIDTH,
+								DEFAULT_GR_SPATIAL_WINDOW_HEIGHT);
+	gtk_window_set_resizable(GTK_WINDOW(gui->graw.window), TRUE);
+
+	gui->graw.drawing_area = gtk_drawing_area_new();
+	gtk_widget_set_size_request(gui->graw.drawing_area,
+								DEFAULT_GR_SPATIAL_WINDOW_WIDTH,
+								DEFAULT_GR_SPATIAL_WINDOW_HEIGHT);
+	gtk_container_add(GTK_CONTAINER(gui->graw.window), gui->graw.drawing_area);
+	g_signal_connect(G_OBJECT(gui->graw.drawing_area), "draw", G_CALLBACK(draw_func), gui->ctrl_ptr);
+	gtk_widget_show_all(gui->graw.window);
+}
+
 static void on_quit(GtkWidget *widget, Control *control)
 {
 	control->run_state = NOT_IN_RUN;
@@ -805,9 +865,9 @@ static void on_pc_window(GtkWidget *widget, Control *control)
 	generate_pc_plot(widget, draw_pc_plot, control);
 }
 
-static bool on_parameters(GtkWidget *widget, gpointer data)
+static void on_gr_spatial_window(GtkWidget *widget, struct gui *gui)
 {
-	return assert(false, "Not implemented", __func__);
+	generate_gr_spatial_plot(widget, draw_gr_spatial_activity, gui);
 }
 
 static bool on_dcn_plast(GtkWidget *widget, gpointer data)
@@ -993,11 +1053,11 @@ int gui_init_and_run(int *argc, char ***argv, Control *control)
 				   false
 				}
 			},
-			{"Parameters", gtk_button_new(), 1, 3,
+			{"GR Activity", gtk_button_new(), 1, 3,
 				{
 				   "clicked",
-				   G_CALLBACK(on_parameters),
-				   NULL,
+				   G_CALLBACK(on_gr_spatial_window),
+				   &gui,
 				   false
 				}
 			},
@@ -1385,6 +1445,10 @@ int gui_init_and_run(int *argc, char ***argv, Control *control)
 					}
 				}
 			}
+		},
+		.graw = {
+			.window = NULL,
+			.drawing_area = NULL
 		},
 		.ctrl_ptr = control /* big yikes move */
 	}; 

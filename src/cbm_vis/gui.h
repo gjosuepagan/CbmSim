@@ -43,7 +43,11 @@
 
 /* pc window constants */
 #define DEFAULT_PC_WINDOW_WIDTH 1024 
-#define DEFAULT_PC_WINDOW_HEIGHT 1000 
+#define DEFAULT_PC_WINDOW_HEIGHT 256 
+
+/* gr spatial window constants */
+#define DEFAULT_GR_SPATIAL_WINDOW_WIDTH 1024 
+#define DEFAULT_GR_SPATIAL_WINDOW_HEIGHT 256
 
 /* file dialog constants */
 #define DEFAULT_STATE_FILE_NAME "cbm_state.bin"
@@ -134,6 +138,12 @@ struct firing_rate_window
 	struct firing_rate_label cell_labels[NUM_CELL_TYPES][NUM_FIRING_RATE_DATA_COLS];
 };
 
+struct gr_activity_window
+{
+	GtkWidget *window;
+	GtkWidget *drawing_area;
+};
+
 struct gui
 {
 	GtkWidget *window;
@@ -144,9 +154,11 @@ struct gui
 	struct button plasticity_radios[NUM_PLASTICITY_RADIOS];
 	struct menu menu_bar;
 	struct firing_rate_window frw;
+	struct gr_activity_window graw;
 	Control *ctrl_ptr;
 };
 
+gboolean gr_act_win_visible(struct gui *gui);
 gboolean firing_rates_win_visible(struct gui *gui);
 gboolean update_fr_labels(struct gui *gui); /* here because use in control */
 int gui_init_and_run(int *argc, char ***argv, Control *control);

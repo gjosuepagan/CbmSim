@@ -421,6 +421,7 @@ void Control::runSession(struct gui *gui)
 
 			if (gui != NULL)
 			{
+				if (gr_act_win_visible(gui)) gtk_widget_queue_draw(gui->graw.drawing_area);
 				if (gtk_events_pending()) gtk_main_iteration();
 			}
 		}
